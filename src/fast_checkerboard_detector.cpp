@@ -33,7 +33,10 @@ FastCheckerboardDetector::FastCheckerboardDetector(ros::NodeHandle& nh, ros::Nod
     {
       ROS_ERROR("Missing parameter 'write_trajectory'!");
     }
-
+    if(!nh_private.getParam("show_image", show_image_))
+    {
+      ROS_ERROR("Missing parameter 'show_image!");
+    }
     corners_.reserve(grid_size_x * grid_size_y);
 
     double x_offset = rect_size_x * (grid_size_x - 1) / 2.0;
@@ -104,6 +107,13 @@ void FastCheckerboardDetector::handleCameraInfo(const sensor_msgs::CameraInfoCon
 void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstPtr& message)
 {
   cv_bridge::CvImageConstPtr image_bridge = cv_bridge::toCvShare(message, "mono8");
+
+  cv_bridge::CvImageConstPtr image_color_bridge;
+  if (show_image_)
+  {
+    image_color_bridge = cv_bridge::toCvShare(message, "bgr8");    
+  }
+
   const cv::Mat image = image_bridge->image;
 
   limitROI(image);
@@ -120,12 +130,13 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
 
     cv::cornerSubPix(image, corners_, cv::Size(4, 4), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 30, 0.01));
     
-    //cv::drawChessboardCorners(image, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
-
-    //cv::imshow("Corners",image);
-
-    //cv::waitKey(5);
-
+    if (show_image_)
+    {
+      cv::Mat image_color = image_color_bridge->image;
+      cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
+      cv::imshow("Corners", image_color);
+      cv::waitKey(5);
+    }
 
     cv::solvePnP(object_points_, corners_, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation);
     
@@ -176,12 +187,16 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
             << q.w() << " "
             << std::endl;
       }
-
   }
   else
   {
     resetROI();
-
+     if (show_image_)
+     {
+      cv::Mat image_color = image_color_bridge->image;
+      cv::imshow("Corners", image_color);
+      cv::waitKey(5);
+     }
     ROS_WARN_STREAM("Checkerboard tracking lost!");
   }
 }

@@ -61,6 +61,7 @@ private:
   bool writePoseToFile;
   std::ostream *trajectory_out_;
   std::string TrajectoryFile;
+  bool show_image_;
 
 public:  
 

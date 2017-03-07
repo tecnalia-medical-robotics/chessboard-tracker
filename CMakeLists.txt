@@ -1,33 +1,41 @@
 cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+project(chessboard-tracker)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
 
-rosbuild_init()
+find_package(catkin REQUIRED
+	roscpp std_msgs sensor_msgs image_transport cv_bridge eigen_conversions
+	cmake_modules)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+find_package(OpenCV REQUIRED)
 
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+catkin_package(
+  INCLUDE_DIRS include
+#  LIBRARIES ar_image_capture
+  CATKIN_DEPENDS roscpp
+  #DEPENDS system_lib
+)
 
-rosbuild_add_library(fast_checkerboard_detector_nodelet src/fast_checkerboard_detector_nodelet.cpp src/fast_checkerboard_detector.cpp)
-rosbuild_add_executable(fast_checkerboard_detector nodes/fast_checkerboard_detector_node.cpp src/fast_checkerboard_detector.cpp)
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+	include
+	${catkin_INCLUDE_DIRS}
+  	${OpenCV_INCLUDE_DIRS}
+  	)
+
+
+
+add_library(fast_checkerboard_detector_nodelet src/fast_checkerboard_detector_nodelet.cpp src/fast_checkerboard_detector.cpp)
+
+add_executable(fast_checkerboard_detector
+				nodes/fast_checkerboard_detector_node.cpp
+				src/fast_checkerboard_detector.cpp)
+
+add_dependencies(fast_checkerboard_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+ target_link_libraries(fast_checkerboard_detector
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+ )
