@@ -82,6 +82,9 @@ public:
   void updateROI();
 
   void fixCorners();
+  void drawAxis(cv::Mat& image, cv::Mat camera_matrix,
+              cv::InputArray dist_coeffs, cv::Mat rvec, cv::Mat tvec,
+              float length);
 };
 
 } /* namespace fast_checkerboard_detector */

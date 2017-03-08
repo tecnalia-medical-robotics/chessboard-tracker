@@ -119,27 +119,29 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
   limitROI(image);
 
   //ROS_INFO_STREAM("ROI x: " << roi_.x << " y: " << roi_.y << " width: " << roi_.width << " height: " << roi_.height);
-
-  bool found_chessboard = cv::findChessboardCorners(cv::Mat(image, roi_), cv::Size(grid_size_x, grid_size_y), corners_, 0);
+  // todo the original code was using the grey image, and not the color one.
+  bool found_chessboard = cv::findChessboardCorners(image_color_bridge->image, cv::Size(grid_size_x, grid_size_y), corners_, 
+                CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 
   fixCorners();
-  updateROI();
+  //updateROI();
 
   if(found_chessboard)
   {
-
+    // todo: in our code, the last flag is 0.1
     cv::cornerSubPix(image, corners_, cv::Size(4, 4), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 30, 0.01));
+    
+    cv::solvePnP(object_points_, corners_, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation);
     
     if (show_image_)
     {
       cv::Mat image_color = image_color_bridge->image;
       cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
+      drawAxis(image_color, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation, 0.1);
       cv::imshow("Corners", image_color);
       cv::waitKey(5);
     }
 
-    cv::solvePnP(object_points_, corners_, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation);
-    
     Eigen::Vector3d rotation_vector(rotation[0], rotation[1], rotation[2]);
     Eigen::Translation3d translation_(translation[0], translation[1], translation[2]);
 
@@ -201,6 +203,36 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
   }
 }
 
+/**
+ * @brief drawAxis Draw a RGB axis in a image for a given coordinate frame
+ * @param image input-output image
+ * @param camera_matrix image camera matrix
+ * @param dist_coeffs image distortion coefficients vector
+ * @param rvec coordinate frame rotation vector in rodrigues format (from world
+ * to camera)
+ * @param tvec coordinate frame translation vector (from world to camera)
+ * @param length axis lenght in same unit than tvec
+ */
+void FastCheckerboardDetector::drawAxis(cv::Mat& image, cv::Mat camera_matrix,
+                                        cv::InputArray dist_coeffs, cv::Mat rvec, cv::Mat tvec,
+                                        float length)
+{
+  // project axis points
+  std::vector<cv::Point3f> axis_points;
+  axis_points.push_back(cv::Point3f(0, 0, 0));
+  axis_points.push_back(cv::Point3f(length, 0, 0));
+  axis_points.push_back(cv::Point3f(0, length, 0));
+  axis_points.push_back(cv::Point3f(0, 0, length));
+  std::vector<cv::Point2f> imagePoints;
+  cv::projectPoints(axis_points, rvec, tvec, camera_matrix, dist_coeffs,
+                    imagePoints);
+
+  //draw3DCoordinateAxes(image, imagePoints);
+  // draw axis lines
+  cv::line(image, imagePoints[0], imagePoints[1], cv::Scalar(0, 0, 255), 3);
+  cv::line(image, imagePoints[0], imagePoints[2], cv::Scalar(0, 255, 0), 3);
+  cv::line(image, imagePoints[0], imagePoints[3], cv::Scalar(255, 0, 0), 3);
+}
 
 
 void FastCheckerboardDetector::resetROI()
