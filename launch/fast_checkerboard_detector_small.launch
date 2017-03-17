@@ -1,14 +1,16 @@
 <launch>
   <node pkg="chessboard-tracker" type="fast_checkerboard_detector" name="checkerboard_detector" ns="checkerboard" output="screen">
-    <param name="grid_size_x" value="5" />
-    <param name="grid_size_y" value="9" />
-    <param name="rect_size_x" value="0.034" />
-    <param name="rect_size_y" value="0.034" />
+    <param name="grid_size_x" value="17" />
+    <param name="grid_size_y" value="11" />
+    <param name="rect_size_x" value="0.015" />
+    <param name="rect_size_y" value="0.015" />
    	<!--param name="trajectory_file" value="$(find fast_checkerboard_detector)/output/Checkerboard_marker_trajectory.txt" /-->
    	<param name="write_trajectory" value="false" />
     <param name="show_image" value="true" />
     <remap from="camera_info" to="/usb_cam/camera_info" />
     <remap from="camera_image"  to="/usb_cam/image_raw" />
+   
+
   </node>
 </launch>
   

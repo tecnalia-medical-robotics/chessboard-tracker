@@ -3,7 +3,7 @@ project(chessboard-tracker)
 
 
 find_package(catkin REQUIRED
-	roscpp std_msgs sensor_msgs image_transport cv_bridge eigen_conversions
+	roscpp std_msgs sensor_msgs image_transport cv_bridge eigen_conversions tf_conversions
 	cmake_modules)
 
 find_package(OpenCV REQUIRED)

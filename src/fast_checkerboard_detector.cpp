@@ -7,6 +7,78 @@
 namespace fast_checkerboard_detector
 {
 
+
+/**
+ * @brief Get the transformation matrix from a m3x3 rotation matrix and a m1x3
+ * or m3x1 translation matrix.
+ * @param r m3x3 rotation matrix
+ * @param t m1x3 or m3x1 translation matrix
+ * @param m4x4 TRanformation matrix
+ */
+void RTMatrices2TransformMatrix(const cv::Mat& r, const cv::Mat& t,
+                                cv::Mat& m4x4)
+{
+  m4x4 = cv::Mat::eye(4, 4, CV_64F);
+  cv::Mat submatR = cv::Mat(m4x4, cv::Rect(0, 0, 3, 3));
+  cv::Mat submatT = cv::Mat(m4x4, cv::Rect(3, 0, 1, 3));
+  r.copyTo(submatR);
+  if (t.cols == 3)
+  {
+    cv::Mat Tt = t.t();
+    Tt.copyTo(submatT);
+  }
+  else
+    t.copyTo(submatT);
+  /*std::cout << "Rotation matrix: " << R << std::endl;
+  std::cout << "Translation matrix: " << T << std::endl;
+  std::cout << "Transformation matrix: " << m4x4 << std::endl;*/
+}
+
+/**
+ * @brief Get the rotation matrix and translation matrix from transformation matrix m4x4
+ * @param m4x4 Tranformation matrix
+ * @param r m3x3 rotation matrix
+ * @param t m1x3 or m3x1 translation matrix
+ */
+void TransformMatrix2RTMatrices(const cv::Mat& m4x4, cv::Mat& r, cv::Mat& t)
+{
+  r = cv::Mat::eye(3, 3, CV_64F);
+  t = cv::Mat::zeros(1, 3, CV_64F);
+
+  r = cv::Mat(m4x4, cv::Rect(0, 0, 3, 3));
+  t = cv::Mat(m4x4, cv::Rect(3, 0, 1, 3));
+
+  /*std::cout << "Rotation matrix: " << r << std::endl;
+  std::cout << "Translation matrix: " << t << std::endl;
+  std::cout << "Transformation matrix: " << m4x4 << std::endl;*/
+}
+
+/**
+ * @brief rodrigues_to_matrix Converts transformation from rodrigues form to 4x4
+ * matrix form
+ * @param r input rotation vector in rodrigues form
+ * @param t input translation vector
+ * @param m4x4 ouput 4x4 matrix transformation
+ */
+void Rodrigues2Matrix(const cv::Mat& r, const cv::Mat& t, cv::Mat& m4x4)
+{
+
+  cv::Mat r64, t64;
+  r.convertTo(r64, CV_64F);
+  t.convertTo(t64, CV_64F);
+
+  m4x4 = cv::Mat::eye(4, 4, r64.type());
+
+  cv::Mat submat3x3 = cv::Mat(m4x4, cv::Rect(0, 0, 3, 3));
+  cv::Rodrigues(r64, submat3x3);
+
+  cv::Mat submatT = cv::Mat(m4x4, cv::Rect(3, 0, 1, 3));
+  t64.copyTo(submatT);
+}
+
+
+
+
 FastCheckerboardDetector::FastCheckerboardDetector(ros::NodeHandle& nh, ros::NodeHandle& nh_private) :
     it_(nh),
     cv_translation(3, 1, cv::DataType<double>::type, translation),
@@ -95,8 +167,6 @@ void FastCheckerboardDetector::handleCameraInfo(const sensor_msgs::CameraInfoCon
       //info_ptr++;
   }
 
-  std::cout << intrinsic_matrix_ << std::endl;
-
 
   distortion_vector = info->D;
 
@@ -133,17 +203,41 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
     
     cv::solvePnP(object_points_, corners_, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation);
     
-    if (show_image_)
-    {
-      cv::Mat image_color = image_color_bridge->image;
-      cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
-      drawAxis(image_color, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation, 0.1);
-      cv::imshow("Corners", image_color);
-      cv::waitKey(5);
-    }
+    // if (show_image_)
+    // {
+    //   cv::Mat image_color = image_color_bridge->image;
+    //   cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
+    //   drawAxis(image_color, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation, 0.1);
+    //   cv::imshow("Corners", image_color);
+    //   cv::waitKey(5);
+    // }
+
+    ROS_INFO_STREAM("solvePNP" << std::endl << cv_rotation << " " << cv_translation);
+
 
     Eigen::Vector3d rotation_vector(rotation[0], rotation[1], rotation[2]);
     Eigen::Translation3d translation_(translation[0], translation[1], translation[2]);
+
+    cv::Mat camMchess;
+
+    Rodrigues2Matrix(cv_rotation, cv_translation, camMchess);
+
+    ROS_INFO_STREAM("in Matrix: " << std::endl << camMchess);
+
+
+    cv::Mat chessMchess2 = cv::Mat::eye(4, 4, CV_64F);
+    chessMchess2.at<double>(0, 3) = - (grid_size_x + 1) * rect_size_x / 2.0;
+    chessMchess2.at<double>(1, 3) = - (grid_size_y + 1) * rect_size_y / 2.0;
+
+    std::cout << "chess transform: " << chessMchess2 << std::endl;
+    cv::Mat r2, t2;
+
+    cv::Mat camMchess2 = camMchess * chessMchess2;
+
+    TransformMatrix2RTMatrices(camMchess2, r2,t2);
+
+
+    ROS_INFO_STREAM("Eigen" << std::endl << r2 << " " << t2);
 
     Eigen::AngleAxisd rotation_;
 
@@ -158,6 +252,35 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
 
     Eigen::Affine3d transform = translation_ * rotation_;
     
+
+    // Eigen::Affine3d camMchess2, chessMchess2;
+    // Eigen::AngleAxisd r_id = Eigen::AngleAxisd(0, Eigen::Vector3d(0, 0, 1));
+    // Eigen::Vector3d chesstchess2(grid_size_x * rect_size_x /2.0, grid_size_y * rect_size_y /2.0, 0);
+
+    // chesstchess2 = chesstchess2 * r_id;
+    // camMchess2 = camMchess * chessMchess2;
+
+    // cv::Mat cv_crc2, cv_ctc2;
+    // cv_crc2 = cv::Mat(1, 3, CV_64F);
+    // cv_ctc2 = cv::Mat(1, 3, CV_64F);
+
+    // Eigen::Translation3d t =  camMchess2.translation();
+    // cv_tc2.at<double>(0,0) = t.x();
+
+    if (show_image_)
+    {
+      cv::Mat image_color = image_color_bridge->image;
+      cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
+      drawAxis(image_color, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation, 0.1);
+      
+      drawAxis(image_color, intrinsic_matrix_, distortion_vector, r2, t2, 0.1);
+
+      cv::imshow("Corners", image_color);
+      cv::waitKey(5);
+    }
+
+
+    ROS_INFO_STREAM("Eigen Matrix" << std::endl << transform.matrix());
     // disambiguate by tracking..
     Eigen::Affine3d rotated_transform = transform; //* Eigen::AngleAxisd(M_PI, Eigen::Vector3d(0,0,1));
     Eigen::Affine3d diff = previous_transform_.inverse() * transform;
@@ -189,6 +312,16 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
             << q.w() << " "
             << std::endl;
       }
+
+    // transform broadcast
+    // tf::Transform tf_transform;
+    // tf::transformEigenToTF(final_transform, tf_transform);
+
+    // broadcast_.sendTransform(tf::StampedTransform(tf_transform,
+    //                                               ros::Time::now(),
+    //                                               "cam",
+    //                                               "chessboard"));
+
   }
   else
   {
@@ -201,6 +334,14 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
      }
     ROS_WARN_STREAM("Checkerboard tracking lost!");
   }
+  tf::Transform tf_transform;
+  Eigen::Affine3d inversed_transform = previous_transform_.inverse();
+  tf::transformEigenToTF(inversed_transform, tf_transform);
+
+  broadcast_.sendTransform(tf::StampedTransform(tf_transform,
+                                                ros::Time::now(),
+                                                "chessboard",
+                                                "cam"));
 }
 
 /**

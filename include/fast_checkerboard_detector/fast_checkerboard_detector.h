@@ -27,6 +27,8 @@
 #include <Eigen/Geometry>
 
 #include <eigen_conversions/eigen_msg.h>
+#include <tf_conversions/tf_eigen.h>
+#include <tf/transform_broadcaster.h>
 
 namespace fast_checkerboard_detector
 {
@@ -39,6 +41,7 @@ private:
 
   ros::Subscriber camera_info_subscriber_;
   ros::Publisher camera_pose_publisher_;
+  tf::TransformBroadcaster broadcast_;
 
   int grid_size_x, grid_size_y;
   double rect_size_x, rect_size_y;
