@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.4.6)
-project(chessboard-tracker)
+project(chessboard_tracker)
 
 
 find_package(catkin REQUIRED
@@ -11,9 +11,7 @@ find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES ar_image_capture
   CATKIN_DEPENDS roscpp
-  #DEPENDS system_lib
 )
 
 ## Specify additional locations of header files
@@ -21,9 +19,8 @@ catkin_package(
 include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
-  	${OpenCV_INCLUDE_DIRS}
-  	)
-
+  ${OpenCV_INCLUDE_DIRS}
+)
 
 
 add_library(fast_checkerboard_detector_nodelet src/fast_checkerboard_detector_nodelet.cpp src/fast_checkerboard_detector.cpp)

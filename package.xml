@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>chessboard-tracker</name>
+  <name>chessboard_tracker</name>
   <version>0.0.0</version>
   <description>The ar_image_capture package</description>
 

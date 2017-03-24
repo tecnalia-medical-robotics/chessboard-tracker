@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="chessboard-tracker" type="fast_checkerboard_detector" name="checkerboard_detector" ns="checkerboard" output="screen">
+  <node pkg="chessboard_tracker" type="fast_checkerboard_detector" name="checkerboard_detector" ns="checkerboard" output="screen">
     <param name="grid_size_x" value="17" />
     <param name="grid_size_y" value="11" />
     <param name="rect_size_x" value="0.015" />
