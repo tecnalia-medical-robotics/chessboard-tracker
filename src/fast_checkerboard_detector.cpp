@@ -194,6 +194,7 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
                 CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 
   fixCorners();
+  // todo check if we want to reactivate that functionality
   //updateROI();
 
   if(found_chessboard)
