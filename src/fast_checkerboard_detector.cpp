@@ -121,7 +121,7 @@ FastCheckerboardDetector::FastCheckerboardDetector(ros::NodeHandle& nh, ros::Nod
         object_points_.push_back(cv::Point3f(x * rect_size_x - x_offset, y * rect_size_y - y_offset, 0));
       }
     }
-    
+
     if(writePoseToFile)
     {
       if(nh_private.getParam("trajectory_file", TrajectoryFile))
@@ -181,7 +181,7 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
   cv_bridge::CvImageConstPtr image_color_bridge;
   if (show_image_)
   {
-    image_color_bridge = cv_bridge::toCvShare(message, "bgr8");    
+    image_color_bridge = cv_bridge::toCvShare(message, "bgr8");
   }
 
   const cv::Mat image = image_bridge->image;
@@ -190,7 +190,7 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
 
   //ROS_INFO_STREAM("ROI x: " << roi_.x << " y: " << roi_.y << " width: " << roi_.width << " height: " << roi_.height);
   // todo the original code was using the grey image, and not the color one.
-  bool found_chessboard = cv::findChessboardCorners(image_color_bridge->image, cv::Size(grid_size_x, grid_size_y), corners_, 
+  bool found_chessboard = cv::findChessboardCorners(image_color_bridge->image, cv::Size(grid_size_x, grid_size_y), corners_,
                 CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 
   fixCorners();
@@ -201,9 +201,9 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
   {
     // todo: in our code, the last flag is 0.1
     cv::cornerSubPix(image, corners_, cv::Size(4, 4), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 30, 0.01));
-    
+
     cv::solvePnP(object_points_, corners_, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation);
-    
+
     // if (show_image_)
     // {
     //   cv::Mat image_color = image_color_bridge->image;
@@ -251,13 +251,13 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
     }
 
     Eigen::Affine3d transform = translation_ * rotation_;
-    
+
     if (show_image_)
     {
       cv::Mat image_color = image_color_bridge->image;
       cv::drawChessboardCorners(image_color, cv::Size(grid_size_x,grid_size_y), cv::Mat(corners_), found_chessboard);
       drawAxis(image_color, intrinsic_matrix_, distortion_vector, cv_rotation, cv_translation, 0.1);
-      
+
       drawAxis(image_color, intrinsic_matrix_, distortion_vector, r2, t2, 0.1);
 
       cv::imshow("Corners", image_color);
@@ -320,13 +320,12 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
     ROS_WARN_STREAM("Checkerboard tracking lost!");
   }
   tf::Transform tf_transform;
-  Eigen::Affine3d inversed_transform = previous_transform_.inverse();
-  tf::transformEigenToTF(inversed_transform, tf_transform);
+  tf::transformEigenToTF(previous_transform_, tf_transform);
 
   broadcast_.sendTransform(tf::StampedTransform(tf_transform,
                                                 ros::Time::now(),
-                                                "chessboard",
-                                                "cam"));
+                                                "cam",
+                                                "chessboard"));
 }
 
 /**
