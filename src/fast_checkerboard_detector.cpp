@@ -109,6 +109,10 @@ FastCheckerboardDetector::FastCheckerboardDetector(ros::NodeHandle& nh, ros::Nod
     {
       ROS_ERROR("Missing parameter 'show_image!");
     }
+    if(!nh_private.getParam("camera_frame_id", camera_frame_id_))
+    {
+      ROS_ERROR("Missing parameter 'camera_frame_id'!");
+    }
     corners_.reserve(grid_size_x * grid_size_y);
 
     double x_offset = rect_size_x * (grid_size_x - 1) / 2.0;
@@ -324,7 +328,7 @@ void FastCheckerboardDetector::handleImageMessage(const sensor_msgs::ImageConstP
 
   broadcast_.sendTransform(tf::StampedTransform(tf_transform,
                                                 ros::Time::now(),
-                                                "cam",
+                                                camera_frame_id_,
                                                 "chessboard"));
 }
 
