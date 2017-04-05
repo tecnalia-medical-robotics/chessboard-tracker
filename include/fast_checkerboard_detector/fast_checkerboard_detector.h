@@ -43,6 +43,7 @@ private:
   ros::Publisher camera_pose_publisher_;
   tf::TransformBroadcaster broadcast_;
   bool inverse_transform_;
+  std::string camera_frame_id_;
 
   int grid_size_x, grid_size_y;
   double rect_size_x, rect_size_y;
@@ -67,7 +68,7 @@ private:
   std::string TrajectoryFile;
   bool show_image_;
 
-public:  
+public:
 
   FastCheckerboardDetector(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
 
