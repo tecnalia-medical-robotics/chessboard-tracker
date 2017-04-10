@@ -1,6 +1,8 @@
 <launch>
   <arg name="camera_info" default="/usb_cam/camera_info"/>
   <arg name="camera_image" default="/usb_cam/image_raw"/>
+  <arg name="camera_frame_id" default="cam"/>
+  <arg name="inverse_transform" default="true"/>
 
   <node pkg="chessboard_tracker" type="fast_checkerboard_detector" name="checkerboard_detector" ns="checkerboard" output="screen">
     <param name="grid_size_x" value="5" />
@@ -10,6 +12,8 @@
    	<!--param name="trajectory_file" value="$(find fast_checkerboard_detector)/output/Checkerboard_marker_trajectory.txt" /-->
    	<param name="write_trajectory" value="false" />
     <param name="show_image" value="true" />
+    <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
+    <param name="inverse_transform" value="$(arg inverse_transform)"/>
     <!--<remap from="camera_info" to="/usb_cam/camera_info" />
     <remap from="camera_image"  to="/usb_cam/image_raw" /> -->
     <remap from="camera_info" to="$(arg camera_info)" />
